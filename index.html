@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Situationship OS 💔</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-primary:#0a0a1a;--bg-secondary:#0d0d2b;--bg-card:rgba(20,15,50,0.65);
+  --purple:#8b5cf6;--purple-light:#a78bfa;--purple-dark:#7c3aed;--purple-glow:rgba(139,92,246,0.25);
+  --pink:#ec4899;--pink-light:#f472b6;--pink-dark:#db2777;--pink-glow:rgba(236,72,153,0.25);
+  --text-primary:#faf5ff;--text-secondary:#c4b5fd;--text-muted:#7c7c9a;
+  --red:#ef4444;--red-glow:rgba(239,68,68,0.25);--green:#34d399;--yellow:#fbbf24;
+  --glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
+  --radius:18px;--radius-sm:12px;--radius-xs:8px;
+}
+html{font-size:16px;-webkit-tap-highlight-color:transparent;scroll-behavior:smooth}
+body{font-family:'Poppins',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;line-height:1.6}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--purple-dark);border-radius:3px}
+
+/* ===== BACKGROUND CANVAS ===== */
+#bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* ===== STARTUP OVERLAY ===== */
+#startupOverlay{position:fixed;inset:0;z-index:1000;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,transform .8s ease}
+#startupOverlay.hide{opacity:0;transform:scale(1.05);pointer-events:none}
+.startup-logo{font-family:'Fredoka',sans-serif;font-size:2.8rem;font-weight:700;background:linear-gradient(135deg,var(--purple-light),var(--pink-light),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;transform:translateY(20px);animation:startupFadeIn .8s .3s forwards}
+.startup-sub{font-family:'Quicksand',sans-serif;font-size:.95rem;color:var(--text-muted);margin-top:8px;opacity:0;animation:startupFadeIn .8s .8s forwards}
+.startup-messages{margin-top:48px;text-align:left;min-height:260px}
+.startup-msg{font-size:.85rem;color:var(--text-secondary);opacity:0;transform:translateX(-10px);margin:10px 0;font-family:'Quicksand',sans-serif}
+.startup-msg.show{animation:msgSlideIn .5s forwards}
+.startup-msg .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--purple);margin-right:10px;vertical-align:middle;animation:dotPulse 1s infinite}
+.startup-enter{margin-top:32px;padding:14px 40px;border:1px solid var(--glass-border);border-radius:50px;background:var(--glass);color:var(--text-secondary);font-family:'Poppins',sans-serif;font-size:.85rem;cursor:pointer;opacity:0;animation:startupFadeIn .8s 5.8s forwards;transition:all .3s;backdrop-filter:blur(10px)}
+.startup-enter:hover{background:var(--purple-dark);color:#fff;border-color:var(--purple);box-shadow:0 0 30px var(--purple-glow)}
+
+/* ===== APP CONTAINER ===== */
+#appContainer{position:relative;z-index:1;opacity:0;transition:opacity .6s .2s;min-height:100vh;display:flex;flex-direction:column}
+#appContainer.show{opacity:1}
+.hidden{display:none!important}
+
+/* ===== HEADER ===== */
+#appHeader{position:sticky;top:0;z-index:100;padding:14px 20px;background:rgba(10,10,26,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.header-logo{font-family:'Fredoka',sans-serif;font-size:1.15rem;font-weight:600;background:linear-gradient(135deg,var(--purple-light),var(--pink-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
+#desktopNav{display:none;gap:4px}
+.nav-tab{padding:8px 16px;border-radius:var(--radius-xs);font-size:.78rem;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all .25s;border:none;background:none;font-family:'Poppins',sans-serif;white-space:nowrap}
+.nav-tab:hover{color:var(--text-secondary);background:var(--glass)}
+.nav-tab.active{color:var(--text-primary);background:rgba(139,92,246,0.15)}
+.nav-tab svg{width:15px;height:15px;vertical-align:-2px;margin-right:5px}
+
+/* ===== MAIN ===== */
+#mainContent{flex:1;padding:20px 20px 100px;max-width:900px;margin:0 auto;width:100%}
+.page{display:none}
+.page.active{display:block;animation:pageIn .45s ease}
+.page-title{font-family:'Fredoka',sans-serif;font-size:1.6rem;font-weight:600;margin-bottom:6px}
+.page-desc{font-size:.82rem;color:var(--text-muted);margin-bottom:24px;font-family:'Quicksand',sans-serif}
+
+/* ===== CARDS ===== */
+.card{background:var(--bg-card);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:22px;transition:transform .3s,box-shadow .3s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)}
+
+/* ===== DASHBOARD GRID ===== */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.metric-card{padding:18px;text-align:center}
+.metric-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:500}
+.metric-value{font-family:'Fredoka',sans-serif;font-size:1.8rem;font-weight:700;margin-bottom:4px}
+.metric-sub{font-size:.72rem;color:var(--text-muted);font-family:'Quicksand',sans-serif}
+
+/* SVG GAUGE */
+.gauge-wrap{width:90px;height:90px;margin:0 auto 10px;position:relative}
+.gauge-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:8}
+.gauge-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1)}
+.gauge-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:1.1rem;font-weight:700}
+
+/* BAR METRIC */
+.bar-wrap{width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin:10px 0 6px}
+.bar-fill{height:100%;border-radius:4px;transition:width 1.5s cubic-bezier(.4,0,.2,1);width:0}
+
+/* WEATHER WIDGET */
+.weather-card{background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(236,72,153,0.08));border:1px solid rgba(139,92,246,0.15);margin-bottom:20px}
+.weather-emoji{font-size:2.4rem;margin-bottom:8px}
+.weather-temp{font-family:'Fredoka',sans-serif;font-size:1.3rem;font-weight:600;margin-bottom:4px}
+.weather-desc{font-size:.8rem;color:var(--text-secondary);font-family:'Quicksand',sans-serif}
+.weather-details{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+.weather-detail{font-size:.72rem;color:var(--text-muted)}
+.weather-detail span{color:var(--text-secondary);font-weight:500}
+
+/* QUICK ACTIONS */
+.quick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.quick-btn{padding:10px 18px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);background:var(--glass);color:var(--text-secondary);font-size:.78rem;cursor:pointer;transition:all .25s;font-family:'Poppins',sans-serif;backdrop-filter:blur(10px)}
+.quick-btn:hover{border-color:var(--purple);color:var(--text-primary);background:rgba(139,92,246,0.1);box-shadow:0 0 20px var(--purple-glow)}
+
+/* CHAOS QUOTE */
+.chaos-quote{font-size:.82rem;color:var(--text-muted);text-align:center;padding:20px;font-style:italic;font-family:'Quicksand',sans-serif;border-left:3px solid var(--pink);background:rgba(236,72,153,0.04);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+
+/* ===== ANALYZE PAGE ===== */
+.analyze-form{display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:.78rem;color:var(--text-secondary);font-weight:500}
+.form-input,.form-select,.form-textarea{padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);background:var(--glass);color:var(--text-primary);font-family:'Poppins',sans-serif;font-size:.85rem;transition:border-color .25s,box-shadow .25s;outline:none;backdrop-filter:blur(10px)}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-glow)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237c7c9a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.form-select option{background:var(--bg-secondary);color:var(--text-primary)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Toggle */
+.toggle-wrap{display:flex;align-items:center;gap:12px}
+.toggle{width:48px;height:26px;border-radius:13px;background:rgba(255,255,255,0.1);cursor:pointer;position:relative;transition:background .3s;border:none;padding:0}
+.toggle.on{background:var(--red)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s}
+.toggle.on::after{transform:translateX(22px)}
+.toggle-label{font-size:.82rem;color:var(--text-muted)}
+
+/* Jelly Button */
+.jelly-btn{padding:14px 28px;border-radius:var(--radius-sm);border:none;font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s;color:#fff;position:relative;overflow:hidden}
+.jelly-btn:active{transform:scale(.95)}
+.jelly-btn.primary{background:linear-gradient(135deg,var(--purple),var(--pink));box-shadow:0 4px 20px var(--purple-glow)}
+.jelly-btn.primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--purple-glow)}
+.jelly-btn.danger{background:linear-gradient(135deg,var(--red),var(--pink-dark));box-shadow:0 4px 20px var(--red-glow)}
+.jelly-btn.danger:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--red-glow)}
+.jelly-btn.ghost{background:var(--glass);border:1px solid var(--glass-border);color:var(--text-secondary);box-shadow:none}
+.jelly-btn.ghost:hover{border-color:var(--purple);color:var(--text-primary)}
+.jelly-btn.full{width:100%;text-align:center}
+
+/* Results Panel */
+.results-panel{display:none}
+.results-panel.show{display:block;animation:pageIn .5s ease}
+.result-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--glass-border)}
+.result-row:last-child{border-bottom:none}
+.result-label{font-size:.82rem;color:var(--text-muted)}
+.result-value{font-family:'Fredoka',sans-serif;font-weight:600;font-size:.95rem}
+.result-bar{flex:1;margin:0 16px;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;max-width:120px}
+.result-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.prediction-box{margin-top:20px;padding:18px;border-radius:var(--radius-sm);background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(236,72,153,0.08));border:1px solid rgba(139,92,246,0.12)}
+.prediction-box p{font-size:.84rem;color:var(--text-secondary);line-height:1.7;font-family:'Quicksand',sans-serif}
+
+/* ===== RED FLAGS PAGE ===== */
+.scan-area{text-align:center;padding:40px 20px}
+.scan-btn-wrap{position:relative;display:inline-block}
+.scan-ring{position:absolute;inset:-20px;border-radius:50%;border:2px solid transparent;opacity:0}
+.scanning .scan-ring{animation:scanRing 2s infinite}
+.scan-ring:nth-child(1){border-color:var(--red-glow);animation-delay:0s}
+.scan-ring:nth-child(2){border-color:var(--purple-glow);animation-delay:.5s}
+.scan-ring:nth-child(3){border-color:var(--pink-glow);animation-delay:1s}
+.flags-list{margin-top:24px;display:flex;flex-direction:column;gap:10px}
+.flag-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--radius-sm);background:var(--glass);border:1px solid var(--glass-border);opacity:0;transform:translateX(-20px);transition:all .4s}
+.flag-item.show{opacity:1;transform:translateX(0)}
+.flag-emoji{font-size:1.2rem;flex-shrink:0}
+.flag-text{font-size:.82rem;color:var(--text-secondary);line-height:1.5}
+.flag-severity{font-size:.65rem;padding:3px 8px;border-radius:20px;font-weight:600;margin-left:auto;flex-shrink:0;white-space:nowrap}
+.severity-low{background:rgba(52,211,153,0.15);color:var(--green)}
+.severity-med{background:rgba(251,191,36,0.15);color:var(--yellow)}
+.severity-high{background:rgba(239,68,68,0.15);color:var(--red)}
+.flag-counter{text-align:center;margin-top:20px;font-family:'Fredoka',sans-serif;font-size:1.1rem;color:var(--red)}
+.still-like-btn{margin-top:16px;text-align:center}
+
+/* ===== CHAT PAGE ===== */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 260px);min-height:350px}
+.chat-messages{flex:1;overflow-y:auto;padding:10px 0;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth}
+.chat-bubble{max-width:80%;padding:12px 16px;border-radius:18px;font-size:.84rem;line-height:1.5;animation:bubbleIn .3s ease}
+.chat-bubble.them{align-self:flex-start;background:var(--bg-card);border:1px solid var(--glass-border);border-bottom-left-radius:4px;color:var(--text-secondary)}
+.chat-bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--purple-dark),var(--purple));border-bottom-right-radius:4px;color:#fff}
+.chat-bubble.system{align-self:center;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.15);color:var(--pink-light);font-size:.75rem;font-style:italic;max-width:90%;text-align:center;border-radius:var(--radius-sm)}
+.typing-indicator{align-self:flex-start;padding:14px 20px;background:var(--bg-card);border:1px solid var(--glass-border);border-radius:18px;border-bottom-left-radius:4px;display:none}
+.typing-indicator.show{display:flex;gap:4px;align-items:center}
+.typing-indicator span{width:7px;height:7px;border-radius:50%;background:var(--text-muted);animation:typingBounce 1.4s infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+.chat-input-wrap{display:flex;gap:10px;padding-top:12px;border-top:1px solid var(--glass-border);margin-top:8px}
+.chat-input{flex:1;padding:12px 16px;border-radius:50px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-primary);font-family:'Poppins',sans-serif;font-size:.84rem;outline:none;backdrop-filter:blur(10px);transition:border-color .25s}
+.chat-input:focus{border-color:var(--purple)}
+.chat-send{width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;flex-shrink:0}
+.chat-send:hover{transform:scale(1.08);box-shadow:0 0 20px var(--purple-glow)}
+.chat-send:active{transform:scale(.92)}
+.chat-send svg{width:18px;height:18px}
+.chat-quick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chat-quick-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-muted);font-size:.72rem;cursor:pointer;transition:all .2s;font-family:'Poppins',sans-serif}
+.chat-quick-btn:hover{border-color:var(--purple);color:var(--text-primary)}
+
+/* ===== LOG PAGE ===== */
+.log-form{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.mood-selector{display:flex;gap:8px;flex-wrap:wrap}
+.mood-btn{width:42px;height:42px;border-radius:var(--radius-xs);border:2px solid var(--glass-border);background:var(--glass);font-size:1.2rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center}
+.mood-btn:hover{border-color:var(--purple);transform:scale(1.1)}
+.mood-btn.selected{border-color:var(--purple);background:rgba(139,92,246,0.15);transform:scale(1.1);box-shadow:0 0 15px var(--purple-glow)}
+.log-entries{display:flex;flex-direction:column;gap:10px}
+.log-entry{padding:16px;border-radius:var(--radius-sm);background:var(--glass);border:1px solid var(--glass-border);animation:pageIn .4s ease;position:relative}
+.log-entry-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.log-mood{font-size:1.3rem}
+.log-date{font-size:.72rem;color:var(--text-muted)}
+.log-text{font-size:.82rem;color:var(--text-secondary);line-height:1.5}
+.log-delete{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.8rem;padding:4px 8px;border-radius:6px;transition:all .2s}
+.log-delete:hover{color:var(--red);background:var(--red-glow)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:.85rem;font-family:'Quicksand',sans-serif}
+.empty-state .empty-emoji{font-size:2.4rem;margin-bottom:12px}
+
+/* ===== MOBILE NAV ===== */
+#mobileNav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;border-radius:var(--radius-xs);cursor:pointer;transition:all .25s;border:none;background:none;color:var(--text-muted);font-family:'Poppins',sans-serif}
+.mob-nav-item svg{width:20px;height:20px;transition:color .25s}
+.mob-nav-item span{font-size:.6rem;font-weight:500}
+.mob-nav-item.active{color:var(--purple-light)}
+.mob-nav-item.active svg{color:var(--purple-light)}
+.mob-nav-item:active{transform:scale(.9)}
+
+/* ===== TOAST ===== */
+#toastContainer{position:fixed;top:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:340px}
+.toast{padding:14px 18px;border-radius:var(--radius-sm);background:rgba(20,15,50,0.9);backdrop-filter:blur(20px);border:1px solid var(--glass-border);font-size:.8rem;color:var(--text-secondary);animation:toastIn .4s ease;pointer-events:all;box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+.toast.out{animation:toastOut .3s ease forwards}
+.toast.judgment{border-left:3px solid var(--pink)}
+.toast.alert{border-left:3px solid var(--red)}
+.toast.love{border-left:3px solid var(--purple)}
+.toast.success{border-left:3px solid var(--green)}
+
+/* ===== CHAOS POPUP ===== */
+#chaosPopup{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+#chaosPopup.show{display:flex;animation:fadeIn .3s ease}
+.chaos-box{background:var(--bg-secondary);border:1px solid var(--glass-border);border-radius:var(--radius);padding:32px;max-width:380px;width:100%;text-align:center;animation:chaosBoxIn .5s cubic-bezier(.2,1,.3,1)}
+.chaos-emoji{font-size:3rem;margin-bottom:14px}
+.chaos-title{font-family:'Fredoka',sans-serif;font-size:1.2rem;font-weight:600;margin-bottom:10px}
+.chaos-text{font-size:.82rem;color:var(--text-muted);line-height:1.6;font-family:'Quicksand',sans-serif;margin-bottom:20px}
+
+/* ===== CONFETTI ===== */
+.confetti-piece{position:fixed;width:8px;height:8px;z-index:3000;pointer-events:none;animation:confettiFall 3s ease-in forwards}
+
+/* ===== FOOTER ===== */
+#appFooter{padding:30px 20px 110px;text-align:center;border-top:1px solid var(--glass-border);margin-top:auto}
+.footer-credit{font-size:.78rem;color:var(--text-muted);font-family:'Quicksand',sans-serif}
+.footer-credit strong{color:var(--pink-light);font-weight:600}
+.footer-sub{font-size:.7rem;color:var(--text-muted);margin-top:6px;font-style:italic;opacity:.6}
+
+/* ===== KEYFRAMES ===== */
+@keyframes startupFadeIn{to{opacity:1;transform:translateY(0)}}
+@keyframes msgSlideIn{to{opacity:1;transform:translateX(0)}}
+@keyframes dotPulse{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes pageIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(40px)}}
+@keyframes bubbleIn{from{opacity:0;transform:scale(.8) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes scanRing{0%{transform:scale(.8);opacity:.8}100%{transform:scale(1.6);opacity:0}}
+@keyframes chaosBoxIn{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes confettiFall{0%{transform:translateY(-10vh) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%,45%,75%{transform:translateX(-4px)}30%,60%,90%{transform:translateX(4px)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px var(--purple-glow)}50%{box-shadow:0 0 40px var(--purple-glow),0 0 60px var(--pink-glow)}}
+.shake{animation:shake .5s ease}
+
+/* ===== RESPONSIVE ===== */
+@media(min-width:640px){
+  .metrics-grid{grid-template-columns:repeat(4,1fr)}
+  .form-row{grid-template-columns:1fr 1fr}
+  #mobileNav{display:none}
+  #desktopNav{display:flex}
+  #mainContent{padding:28px 28px 40px}
+  #appFooter{padding:30px 28px 40px}
+  .chat-container{height:calc(100vh - 240px)}
+}
+@media(min-width:900px){
+  .metrics-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:380px){
+  .metrics-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .metric-card{padding:14px}
+  .metric-value{font-size:1.4rem}
+  .gauge-wrap{width:70px;height:70px}
+  .page-title{font-size:1.3rem}
+}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Background Canvas -->
+<canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+<!-- Startup Overlay -->
+<div id="startupOverlay" role="dialog" aria-label="Loading screen">
+  <div class="startup-logo">Situationship OS 💔</div>
+  <div class="startup-sub">Emotionally unavailable but online.</div>
+  <div class="startup-messages" id="startupMessages"></div>
+  <button class="startup-enter" id="startupEnter" aria-label="Enter app">Enter the Chaos →</button>
+</div>
+
+<!-- App Container -->
+<div id="appContainer" class="hidden">
+
+  <!-- Header -->
+  <header id="appHeader">
+    <div class="header-logo">Situationship OS 💔</div>
+    <nav id="desktopNav" aria-label="Main navigation">
+      <button class="nav-tab active" data-page="dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+      </button>
+      <button class="nav-tab" data-page="analyze" aria-label="Analyze">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Analyze
+      </button>
+      <button class="nav-tab" data-page="flags" aria-label="Red Flags">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Red Flags
+      </button>
+      <button class="nav-tab" data-page="chat" aria-label="Chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat Sim
+      </button>
+      <button class="nav-tab" data-page="log" aria-label="Log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Log
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main id="mainContent">
+
+    <!-- DASHBOARD PAGE -->
+    <section id="page-dashboard" class="page active" aria-label="Dashboard">
+      <h1 class="page-title">Emotional Dashboard</h1>
+      <p class="page-desc">Your situationship analytics at a glance. It's giving... concerning.</p>
+
+      <!-- Emotional Weather -->
+      <div class="card weather-card" id="weatherWidget">
+        <div class="weather-emoji" id="weatherEmoji">🌧️</div>
+        <div class="weather-temp" id="weatherTemp">Mixed Signals</div>
+        <div class="weather-desc" id="weatherDesc">Heavy rainfall of confusion expected throughout the week.</div>
+        <div class="weather-details">
+          <div class="weather-detail">Anxiety: <span id="weatherAnxiety">High</span></div>
+          <div class="weather-detail">Hope: <span id="weatherHope">Toxic</span></div>
+          <div class="weather-detail">Delusion: <span id="weatherDelusion">Peak</span></div>
+        </div>
+      </div>
+
+      <!-- Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="card metric-card">
+          <div class="metric-label">Delusion Level</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+              <circle class="gauge-fill" cx="60" cy="60" r="50" stroke="var(--purple)" stroke-dasharray="314" stroke-dashoffset="314" data-target="73"/>
+            </svg>
+            <div class="gauge-text" style="color:var(--purple-light)">73%</div>
+          </div>
+          <div class="metric-sub">Beautifully delusional</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Emotional Stability</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+              <circle class="gauge-fill" cx="60" cy="60" r="50" stroke="var(--red)" stroke-dasharray="314" stroke-dashoffset="314" data-target="23"/>
+            </svg>
+            <div class="gauge-text" style="color:var(--red)">23%</div>
+          </div>
+          <div class="metric-sub">Crisis mode active</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Ghosting Risk</div>
+          <div class="bar-wrap"><div class="bar-fill" data-width="67" style="background:linear-gradient(90deg,var(--yellow),var(--red))"></div></div>
+          <div class="metric-value" style="color:var(--red);font-size:1.4rem">67%</div>
+          <div class="metric-sub">They're warming up the ghost mobile</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Survival Chance</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+              <circle class="gauge-fill" cx="60" cy="60" r="50" stroke="var(--green)" stroke-dasharray="314" stroke-dashoffset="314" data-target="12"/>
+            </svg>
+            <div class="gauge-text" style="color:var(--green)">12%</div>
+          </div>
+          <div class="metric-sub">Not looking great bestie</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Main Character Aura</div>
+          <div class="bar-wrap"><div class="bar-fill" data-width="89" style="background:linear-gradient(90deg,var(--purple),var(--pink))"></div></div>
+          <div class="metric-value" style="color:var(--pink-light);font-size:1.4rem">89%</div>
+          <div class="metric-sub">The drama finds YOU</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Self Respect</div>
+          <div class="bar-wrap"><div class="bar-fill" data-width="15" style="background:linear-gradient(90deg,var(--red),var(--yellow))"></div></div>
+          <div class="metric-value" style="color:var(--yellow);font-size:1.4rem">15%</div>
+          <div class="metric-sub">Temporarily disconnected</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Attachment Issues</div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+              <circle class="gauge-fill" cx="60" cy="60" r="50" stroke="var(--pink)" stroke-dasharray="314" stroke-dashoffset="314" data-target="94"/>
+            </svg>
+            <div class="gauge-text" style="color:var(--pink-light)">94%</div>
+          </div>
+          <div class="metric-sub">Clinically concerning</div>
+        </div>
+        <div class="card metric-card">
+          <div class="metric-label">Overthinking Speed</div>
+          <div class="bar-wrap"><div class="bar-fill" data-width="95" style="background:linear-gradient(90deg,var(--purple-dark),var(--purple-light))"></div></div>
+          <div class="metric-value" style="color:var(--purple-light);font-size:1.4rem">999 mph</div>
+          <div class="metric-sub">Faster than their reply time</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="refreshWeather()">🌤️ New Weather</button>
+        <button class="quick-btn" onclick="shuffleMetrics()">🎲 Shuffle Stats</button>
+        <button class="quick-btn" onclick="triggerChaos()">💣 Chaos Mode</button>
+        <button class="quick-btn" onclick="celebrateBareMinimum()">🎉 Celebrate Bare Minimum</button>
+        <button class="quick-btn" onclick="touchGrassAlert()">🌿 Touch Grass</button>
+      </div>
+
+      <!-- Chaos Quote -->
+      <div class="chaos-quote" id="chaosQuote">"You're not overthinking. You're just doing advanced emotional analysis that they don't deserve."</div>
+    </section>
+
+    <!-- ANALYZE PAGE -->
+    <section id="page-analyze" class="page" aria-label="Reply Analyzer">
+      <h1 class="page-title">Reply Analyzer</h1>
+      <p class="page-desc">Paste their message and let us diagnose the emotional damage.</p>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="analyze-form">
+          <div class="form-group">
+            <label class="form-label" for="analyzeMsg">Their Message</label>
+            <textarea class="form-textarea" id="analyzeMsg" placeholder="e.g. hmm yeah maybe lol" maxlength="500"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="analyzeTime">Reply Time</label>
+              <select class="form-select" id="analyzeTime">
+                <option value="0">Instantly</option>
+                <option value="1">Under 5 minutes</option>
+                <option value="2">Under 30 minutes</option>
+                <option value="3">Under 1 hour</option>
+                <option value="4" selected>1-3 hours</option>
+                <option value="5">3-6 hours</option>
+                <option value="6">6-12 hours</option>
+                <option value="7">Over 12 hours</option>
+                <option value="8">1+ day</option>
+                <option value="9">Ghosted (no reply)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="analyzeEmoji">Emojis Used</label>
+              <select class="form-select" id="analyzeEmoji">
+                <option value="0">None</option>
+                <option value="1">1</option>
+                <option value="2" selected>2-3</option>
+                <option value="3">4+</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Left on Seen?</label>
+              <div class="toggle-wrap">
+                <button class="toggle" id="seenToggle" aria-label="Toggle seen status" role="switch" aria-checked="false"></button>
+                <span class="toggle-label" id="seenLabel">No</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="analyzeWeird">"We'll see" Count This Week</label>
+              <input class="form-input" type="number" id="analyzeWeird" min="0" max="99" value="2" placeholder="0">
+            </div>
+          </div>
+          <button class="jelly-btn primary full" onclick="analyzeReply()">Analyze the Damage 💔</button>
+        </div>
+      </div>
+
+      <div class="results-panel card" id="analyzeResults">
+        <h3 style="font-family:'Fredoka',sans-serif;font-size:1.1rem;margin-bottom:16px">Diagnosis Report</h3>
+        <div id="resultsContent"></div>
+        <div class="prediction-box" id="predictionBox"></div>
+        <button class="jelly-btn ghost full" style="margin-top:16px" onclick="saveAnalysis()">Save to Emotional Log 📝</button>
+      </div>
+    </section>
+
+    <!-- RED FLAGS PAGE -->
+    <section id="page-flags" class="page" aria-label="Red Flag Detector">
+      <h1 class="page-title">Red Flag Detector</h1>
+      <p class="page-desc">Scan for red flags. Warning: results may cause existential crisis.</p>
+
+      <div class="card scan-area" id="scanArea">
+        <div class="scan-btn-wrap" id="scanBtnWrap">
+          <div class="scan-ring"></div>
+          <div class="scan-ring"></div>
+          <div class="scan-ring"></div>
+          <button class="jelly-btn danger" onclick="scanRedFlags()" id="scanBtn" style="position:relative;z-index:1;padding:18px 40px;font-size:1rem">Scan for Red Flags 🔍</button>
+        </div>
+        <div class="flag-counter" id="flagCounter" style="display:none"></div>
+      </div>
+
+      <div class="flags-list" id="flagsList"></div>
+
+      <div class="still-like-btn" id="stillLikeWrap" style="display:none;text-align:center">
+        <button class="jelly-btn ghost" onclick="stillLikeThem()" style="margin-top:8px">But I still like them 🥺</button>
+      </div>
+    </section>
+
+    <!-- CHAT PAGE -->
+    <section id="page-chat" class="page" aria-label="Text Simulator">
+      <h1 class="page-title">Dry Text Simulator</h1>
+      <p class="page-desc">Practice receiving emotionally unavailable responses in real time.</p>
+
+      <div class="card chat-container">
+        <div class="chat-quick">
+          <button class="chat-quick-btn" onclick="sendQuick('I miss you')">I miss you</button>
+          <button class="chat-quick-btn" onclick="sendQuick('Where have you been?')">Where u been?</button>
+          <button class="chat-quick-btn" onclick="sendQuick('Are we together?')">Are we together?</button>
+          <button class="chat-quick-btn" onclick="sendQuick('Good morning')">Good morning</button>
+          <button class="chat-quick-btn" onclick="sendQuick('Why do you ignore me?')">Why ignore me?</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-bubble system">Situationship OS Chat Simulator loaded. They're "busy."</div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator"><span></span><span></span><span></span></div>
+        <div class="chat-input-wrap">
+          <input class="chat-input" id="chatInput" type="text" placeholder="Type your message..." maxlength="300" autocomplete="off">
+          <button class="chat-send" onclick="sendMessage()" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOG PAGE -->
+    <section id="page-log" class="page" aria-label="Emotional Log">
+      <h1 class="page-title">Emotional Damage Log</h1>
+      <p class="page-desc">Document every heartbreak, breadcrumb, and bad decision.</p>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="log-form">
+          <div class="form-group">
+            <label class="form-label">How are you feeling?</label>
+            <div class="mood-selector" id="moodSelector">
+              <button class="mood-btn" data-mood="😭" aria-label="Devastated">😭</button>
+              <button class="mood-btn" data-mood="💀" aria-label="Dead Inside">💀</button>
+              <button class="mood-btn" data-mood="😐" aria-label="Numb">😐</button>
+              <button class="mood-btn" data-mood="🤡" aria-label="Clowning">🤡</button>
+              <button class="mood-btn" data-mood="😤" aria-label="Angry">😤</button>
+              <button class="mood-btn" data-mood="🥺" aria-label="Hoping">🥺</button>
+              <button class="mood-btn" data-mood="✨" aria-label="Delusional">✨</button>
+              <button class="mood-btn" data-mood="💖" aria-label="Loved">💖</button>
+              <button class="mood-btn" data-mood="😌" aria-label="Peaceful">😌</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="logText">What happened?</label>
+            <textarea class="form-textarea" id="logText" placeholder="e.g. They liked my story but didn't reply to my message..." maxlength="500"></textarea>
+          </div>
+          <button class="jelly-btn primary full" onclick="addLogEntry()">Log Emotional Damage 📉</button>
+        </div>
+      </div>
+
+      <div class="log-entries" id="logEntries"></div>
+      <div class="empty-state" id="emptyLog">
+        <div class="empty-emoji">📝</div>
+        No emotional damage logged yet.<br>That's... suspicious.
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer id="appFooter">
+    <div class="footer-credit">Developed emotionally by <strong>Arideep Kanshabanik</strong> 💖</div>
+    <div class="footer-sub">Emotionally supported by bad decisions.</div>
+  </footer>
+
+  <!-- Mobile Nav -->
+  <nav id="mobileNav" aria-label="Mobile navigation">
+    <button class="mob-nav-item active" data-page="dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="mob-nav-item" data-page="analyze" aria-label="Analyze">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Analyze</span>
+    </button>
+    <button class="mob-nav-item" data-page="flags" aria-label="Red Flags">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span>Flags</span>
+    </button>
+    <button class="mob-nav-item" data-page="chat" aria-label="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Chat</span>
+    </button>
+    <button class="mob-nav-item" data-page="log" aria-label="Log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Log</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- Chaos Popup -->
+<div id="chaosPopup" role="dialog" aria-label="Chaos alert">
+  <div class="chaos-box">
+    <div class="chaos-emoji" id="chaosEmoji">🚨</div>
+    <div class="chaos-title" id="chaosTitle">Emotional Overload Detected</div>
+    <div class="chaos-text" id="chaosText">Your attachment issues are vibrating at a frequency that cracked our servers.</div>
+    <button class="jelly-btn primary" onclick="closeChaos()">I accept my fate 💔</button>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" aria-live="polite"></div>
+
+<script>
+/* ================================================
+   SITUATIONSHIP OS - Complete Application Logic
+   ================================================ */
+
+// ===== DATA CONSTANTS =====
+const STARTUP_MESSAGES = [
+  { text: 'Loading emotional damage...', emoji: '💔' },
+  { text: 'Checking attachment issues...', emoji: '🚨' },
+  { text: 'Restoring delusion engine...', emoji: '💭' },
+  { text: 'Connecting to emotionally unavailable servers...', emoji: '☁️' },
+  { text: 'Scanning mixed signals...', emoji: '📡' },
+  { text: 'Detecting red flags...', emoji: '🚩' },
+  { text: 'Initializing heartbreak protocols...', emoji: '💔' },
+  { text: 'Situationship OS ready.', emoji: '✨' }
+];
+
+const DRY_WORDS = ['hmm','idk','lol','yeah','k','ok','nm','cool','nice','aight','mhm','ya','yea','nah','bruh','lmao','damn','sure','fine','whatever','maybe','probably','ion know','lowkey','ngl','tbh'];
+const RED_FLAG_PHRASES = ["we'll see","not ready","busy rn","tired","maybe later","idk","one day","soon","eventually","it's complicated","don't worry","you're overthinking","chill","relax","i'm good","we're cool"];
+const EMOTIONALLY_UNAVAILABLE_RESPONSES = [
+  'my bad i fell asleep','u overthinking','idk','we\'ll see','damn that\'s crazy',
+  'hmm','yeah','lol','nm u','busy rn','maybe later','i\'m just not ready for anything rn',
+  'you\'re cool tho','don\'t worry about it','it is what it is','lol nah','ion know',
+  'lowkey yeah','tbh idk','ngl maybe','bruh','i was busy','my phone died','sorry i didn\'t see it',
+  'u good','we\'re just friends rn','i don\'t want a label','let\'s see how it goes',
+  'i\'m just living life','you\'re tripping','chill','relax','why u mad tho',
+  'i texted u back didn\'t i','what do u want me to say','i\'m not good at texting',
+  'same energy','slay','that\'s wild','sounds fake but ok'
+];
+
+const RED_FLAGS = [
+  { text: 'Says "wyd" every day but never plans anything.', severity: 'high', emoji: '🚩' },
+  { text: 'Replies emotionally once every eclipse.', severity: 'high', emoji: '💀' },
+  { text: 'Uses "lol" to escape accountability.', severity: 'med', emoji: '😭' },
+  { text: 'Online 24/7 but "busy." Interesting.', severity: 'high', emoji: '☁️' },
+  { text: 'Sends mixed signals professionally.', severity: 'high', emoji: '🚨' },
+  { text: 'This person emotionally freelances.', severity: 'med', emoji: '💅' },
+  { text: 'Communication skills in recession.', severity: 'med', emoji: '📉' },
+  { text: 'Calls you "buddy" after 3 months of flirting.', severity: 'high', emoji: '🚩' },
+  { text: 'Only texts after 11 PM. Every. Single. Time.', severity: 'high', emoji: '🌙' },
+  { text: 'Says "you\'re different" to 47 people.', severity: 'high', emoji: '💀' },
+  { text: 'Has a story but no text. Classic.', severity: 'med', emoji: '📱' },
+  { text: '"I\'m not like other guys/girls" — proceed with caution.', severity: 'high', emoji: '🚩' },
+  { text: 'Their love language is leaving you on read.', severity: 'high', emoji: '👀' },
+  { text: 'Remembers your birthday but forgets you exist.', severity: 'med', emoji: '🎂' },
+  { text: 'Ghosting is their cardio.', severity: 'high', emoji: '👻' },
+  { text: 'Says they hate drama but creates all of it.', severity: 'med', emoji: '🎭' },
+  { text: 'Their phone is always "dying" when you call.', severity: 'med', emoji: '🔋' },
+  { text: 'Introduces you as "just a friend" to everyone.', severity: 'high', emoji: '🚩' },
+  { text: 'Plans are always "tentative" — forever.', severity: 'med', emoji: '📅' },
+  { text: 'Gets jealous but won\'t commit. The classic combo.', severity: 'high', emoji: '💀' },
+  { text: 'Says "I\'ll text you later" and later means never.', severity: 'high', emoji: '⏰' },
+  { text: 'Their excuse folder has more files than your photo library.', severity: 'med', emoji: '📁' },
+  { text: 'Tells you not to catch feelings. Too late.', severity: 'high', emoji: '🚨' },
+  { text: 'Says "you deserve better" but won\'t step aside.', severity: 'high', emoji: '💅' },
+  { text: 'Their "just kidding" carries emotional weight.', severity: 'med', emoji: '⚠️' },
+  { text: 'Compliments you then disappears for a week.', severity: 'high', emoji: '🎭' },
+  { text: 'Posts sad stories but ignores your "you good?" text.', severity: 'high', emoji: '☁️' },
+  { text: 'Has an ex they\'re "still friends with." Bold choice.', severity: 'med', emoji: '🚩' },
+  { text: 'Texts in complete sentences only when they need something.', severity: 'med', emoji: '📉' }
+];
+
+const WEATHER_STATES = [
+  { emoji: '🌧️', temp: 'Mixed Signals', desc: 'Heavy rainfall of confusion expected throughout the week. Bring an umbrella of self-respect.', anxiety: 'High', hope: 'Toxic', delusion: 'Peak' },
+  { emoji: '⛈️', temp: 'Emotional Thunderstorm', desc: 'Sudden outbursts of overthinking with scattered crying spells. Stay indoors (and off their social media).', anxiety: 'Critical', hope: 'Delusional', delusion: 'Maximum' },
+  { emoji: '☁️', temp: 'Emotionally Cloudy', desc: 'Visibility low. Cannot determine if they like you or are just bored. Forecast: more confusion.', anxiety: 'Medium', hope: 'Fading', delusion: 'Steady' },
+  { emoji: '🌤️', temp: 'False Hope', desc: 'They texted back with a full sentence! Skies are temporarily clearing. Warning: may not last.', anxiety: 'Low', hope: 'Dangerously High', delusion: 'Rising' },
+  { emoji: '🌪️', temp: 'Situationship Tornado', desc: 'Everything is spinning. One minute you\'re fine, next you\'re reading into a story like it\'s the constitution.', anxiety: 'Extreme', hope: 'Gone', delusion: 'Off The Charts' },
+  { emoji: '🌫️', temp: 'Breadcrumb Fog', desc: 'Thick fog of occasional likes and late-night texts. Navigation impossible. You are lost.', anxiety: 'High', hope: 'Crumbs Only', delusion: 'Sustained' },
+  { emoji: '❄️', temp: 'Ghosting Front', desc: 'A cold front of silence is moving in from the east. Response time: undefined. Bundle up emotionally.', anxiety: 'Frozen', hope: 'Deceased', delusion: 'In Denial' },
+  { emoji: '🌈', temp: 'Delusional Rainbow', desc: 'You found a sign they might care! (They didn\'t.) But the rainbow is pretty so enjoy it while it lasts.', anxiety: 'Manageable', hope: 'Unrealistic', delusion: 'Beautiful' }
+];
+
+const CHAOS_QUOTES = [
+  '"You\'re not overthinking. You\'re just doing advanced emotional analysis that they don\'t deserve."',
+  '"Every situationship is just two people agreeing to be anxious together."',
+  '"They left you on read and you wrote a whole essay in your head. Classic."',
+  '"Your therapist would have a field day with this app."',
+  '"Respectfully, you\'re doing the most for someone doing the least."',
+  '"Being emotionally available in 2025 is the new rebellious act."',
+  '"You didn\'t catch feelings. They ambushed you."',
+  '"The bare minimum hits different when you\'ve been surviving on breadcrumbs."',
+  '"Your situationship has more plot twists than a Netflix thriller."',
+  '"Maybe the real red flag was the friends we made along the way. No wait, it was them."',
+  '"Emotionally unavailable but somehow always watching your stories."',
+  '"You deserve a love story, not a loading screen."',
+  '"They said \'I\'m not good at texting\' but their Instagram replies say otherwise."',
+  '"Attachment issues? No no, this is just premium emotional investment."',
+  '"The situationship survival rate is lower than a houseplant in your care."'
+];
+
+const CHAOS_POPUPS = [
+  { emoji: '🚨', title: 'Emotional Overload Detected', text: 'Your attachment issues are vibrating at a frequency that cracked our servers. Please breathe.' },
+  { emoji: '💀', title: 'Therapist Disconnected', text: 'Your assigned Situationship OS therapist has resigned. They couldn\'t handle it either.' },
+  { emoji: '📉', title: 'Self Respect Alert', text: 'Your self-respect levels have dropped below minimum operating threshold. Consider a reality check.' },
+  { emoji: '☁️', title: 'Delusion Engine Overheating', text: 'You\'ve been delusional for so long the system auto-renewed your subscription.' },
+  { emoji: '🚩', title: 'Red Flag Tsunami', text: 'So many red flags detected that our flag store ran out of inventory.' },
+  { emoji: '👻', title: 'Ghost Detected', text: 'Our sensors picked up a ghosting event in your near future. Or present. Or past. It\'s all the same really.' },
+  { emoji: '💄', title: 'Main Character Moment', text: 'The universe has designated you as the main character of today\'s emotional disaster.' }
+];
+
+const JUDGMENT_TOASTS = [
+  'Respectfully you ignored 17 red flags.',
+  'You really folded over one compliment?',
+  'This situationship has negative ROI.',
+  'Emotionally unemployed behavior detected.',
+  'Bro got breadcrumbed professionally.',
+  'You\'re writing a novel in your head and they sent "k."',
+  'They\'re not "busy," they\'re prioritizing.',
+  'Bestie respectfully... what are we doing here.',
+  'You\'re one "hmm" away from a mental breakdown.',
+  'The math ain\'t mathing and neither is this situationship.',
+  'You gave boyfriend/girlfriend energy to a situationship.',
+  'They said "we\'ll see" and you said "okay!" Sir.',
+  'Your standards are so low they\'re underground.',
+  'Proud of you for not double texting. Growth.',
+  'Reply took 9 hours but you replied in 12 seconds. Stand up.'
+];
+
+const STILL_LIKE_RESPONSES = [
+  'Bestie... we need to talk. About your standards.',
+  'The delusion is beautiful but concerning.',
+  'You deserve better than a "we\'ll see" lifestyle.',
+  'Okay but at least acknowledge you\'re clowning.',
+  'They\'re not "hard to get." They\'re hard to want.',
+  'Sis/bro, the red flags aren\'t decorative.',
+  'At this point the red flags are just your aesthetic.',
+  'You\'re not "seeing the best in them." You\'re seeing things that aren\'t there.',
+  'The amount of excuses you\'ve made could fill a book. A sad book.'
+];
+
+// ===== STORAGE HELPERS =====
+const Storage = {
+  get(key, fallback) {
+    try {
+      const v = localStorage.getItem('sos_' + key);
+      return v ? JSON.parse(v) : fallback;
+    } catch { return fallback; }
+  },
+  set(key, val) {
+    try { localStorage.setItem('sos_' + key, JSON.stringify(val)); } catch {}
+  },
+  remove(key) {
+    try { localStorage.removeItem('sos_' + key); } catch {}
+  }
+};
+
+// ===== BACKGROUND EFFECTS =====
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+let stars = [], hearts = [], particles = [];
+let bgW, bgH;
+
+function resizeBg() {
+  bgW = bgCanvas.width = window.innerWidth;
+  bgH = bgCanvas.height = window.innerHeight;
+}
+
+function initBg() {
+  resizeBg();
+  stars = [];
+  hearts = [];
+  particles = [];
+  // Stars
+  const starCount = Math.min(80, Math.floor(bgW * bgH / 12000));
+  for (let i = 0; i < starCount; i++) {
+    stars.push({
+      x: Math.random() * bgW, y: Math.random() * bgH,
+      r: Math.random() * 1.5 + 0.3,
+      alpha: Math.random(), speed: Math.random() * 0.005 + 0.002,
+      dir: Math.random() > 0.5 ? 1 : -1
+    });
+  }
+  // Hearts
+  for (let i = 0; i < 6; i++) {
+    hearts.push(createHeart());
+  }
+  // Particles
+  for (let i = 0; i < 20; i++) {
+    particles.push({
+      x: Math.random() * bgW, y: Math.random() * bgH,
+      r: Math.random() * 1.5 + 0.5,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.3 + 0.1,
+      color: Math.random() > 0.5 ? '139,92,246' : '236,72,153'
+    });
+  }
+}
+
+function createHeart() {
+  return {
+    x: Math.random() * bgW, y: bgH + 20,
+    size: Math.random() * 10 + 8,
+    speed: Math.random() * 0.4 + 0.2,
+    wobble: Math.random() * Math.PI * 2,
+    wobbleSpeed: Math.random() * 0.01 + 0.005,
+    alpha: Math.random() * 0.15 + 0.05
+  };
+}
+
+function drawHeart(ctx, x, y, size) {
+  ctx.beginPath();
+  const s = size / 10;
+  ctx.moveTo(x, y + s * 3);
+  ctx.bezierCurveTo(x, y, x - s * 5, y, x - s * 5, y + s * 3);
+  ctx.bezierCurveTo(x - s * 5, y + s * 6, x, y + s * 9, x, y + s * 11);
+  ctx.bezierCurveTo(x, y + s * 9, x + s * 5, y + s * 6, x + s * 5, y + s * 3);
+  ctx.bezierCurveTo(x + s * 5, y, x, y, x, y + s * 3);
+  ctx.closePath();
+}
+
+function animateBg() {
+  bgCtx.clearRect(0, 0, bgW, bgH);
+
+  // Draw stars
+  for (const s of stars) {
+    s.alpha += s.speed * s.dir;
+    if (s.alpha >= 1 || s.alpha <= 0.1) s.dir *= -1;
+    bgCtx.beginPath();
+    bgCtx.arc(s.x, s.y, Math.max(0.1, s.r), 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(200,190,255,${s.alpha * 0.6})`;
+    bgCtx.fill();
+  }
+
+  // Draw hearts
+  for (let i = 0; i < hearts.length; i++) {
+    const h = hearts[i];
+    h.y -= h.speed;
+    h.wobble += h.wobbleSpeed;
+    const wx = h.x + Math.sin(h.wobble) * 20;
+    if (h.y < -30) hearts[i] = createHeart();
+    bgCtx.save();
+    bgCtx.globalAlpha = h.alpha;
+    bgCtx.fillStyle = '#ec4899';
+    drawHeart(bgCtx, wx, h.y, h.size);
+    bgCtx.fill();
+    bgCtx.restore();
+  }
+
+  // Draw particles
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = bgW;
+    if (p.x > bgW) p.x = 0;
+    if (p.y < 0) p.y = bgH;
+    if (p.y > bgH) p.y = 0;
+    bgCtx.beginPath();
+    bgCtx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(${p.color},${p.alpha})`;
+    bgCtx.fill();
+  }
+
+  requestAnimationFrame(animateBg);
+}
+
+window.addEventListener('resize', resizeBg);
+
+// ===== STARTUP ANIMATION =====
+function runStartup() {
+  const container = document.getElementById('startupMessages');
+  STARTUP_MESSAGES.forEach((msg, i) => {
+    const el = document.createElement('div');
+    el.className = 'startup-msg';
+    el.innerHTML = `<span class="dot"></span>${msg.text}`;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add('show'), 800 + i * 550);
+  });
+
+  document.getElementById('startupEnter').addEventListener('click', enterApp);
+}
+
+function enterApp() {
+  const overlay = document.getElementById('startupOverlay');
+  overlay.classList.add('hide');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    document.getElementById('appContainer').classList.remove('hidden');
+    requestAnimationFrame(() => {
+      document.getElementById('appContainer').classList.add('show');
+      animateDashboardIn();
+      startChaosTimer();
+      setTimeout(() => showToast('Welcome back to emotional chaos 💖', 'love'), 800);
+    });
+  }, 800);
+}
+
+// ===== NAVIGATION =====
+function initNav() {
+  document.querySelectorAll('.nav-tab, .mob-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => switchPage(btn.dataset.page));
+  });
+}
+
+function switchPage(pageId) {
+  // Update nav
+  document.querySelectorAll('.nav-tab, .mob-nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === pageId);
+  });
+  // Switch page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + pageId);
+  if (target) {
+    target.classList.add('active');
+    // Re-animate gauges if dashboard
+    if (pageId === 'dashboard') animateDashboardIn();
+  }
+}
+
+// ===== DASHBOARD =====
+function animateDashboardIn() {
+  // Animate gauge fills
+  setTimeout(() => {
+    document.querySelectorAll('.gauge-fill[data-target]').forEach(g => {
+      const target = parseInt(g.dataset.target);
+      const circumference = 314;
+      g.style.strokeDashoffset = circumference - (circumference * target / 100);
+    });
+    document.querySelectorAll('.bar-fill[data-width]').forEach(b => {
+      b.style.width = b.dataset.width + '%';
+    });
+  }, 200);
+}
+
+function shuffleMetrics() {
+  // Randomize gauge values
+  document.querySelectorAll('.gauge-fill[data-target]').forEach(g => {
+    const newVal = Math.floor(Math.random() * 85) + 10;
+    g.dataset.target = newVal;
+    const circumference = 314;
+    g.style.strokeDashoffset = circumference - (circumference * newVal / 100);
+    const textEl = g.closest('.gauge-wrap').querySelector('.gauge-text');
+    if (textEl) textEl.textContent = newVal + '%';
+  });
+  document.querySelectorAll('.bar-fill[data-width]').forEach(b => {
+    const newVal = Math.floor(Math.random() * 85) + 10;
+    b.dataset.width = newVal;
+    b.style.width = newVal + '%';
+    const card = b.closest('.metric-card');
+    const valEl = card.querySelector('.metric-value');
+    if (valEl) {
+      if (valEl.textContent.includes('mph')) {
+        valEl.textContent = Math.floor(Math.random() * 900 + 100) + ' mph';
+      } else {
+        valEl.textContent = newVal + '%';
+      }
+    }
+  });
+  // Update subtexts
+  const subs = [
+    'Beautifully delusional','Crisis mode active','Not looking great bestie',
+    'The drama finds YOU','Temporarily disconnected','Clinically concerning',
+    'Faster than their reply time','Statistically alarming','Concerning but aesthetic',
+    'Peak chaos energy','Emotionally unhinged','Breaking all records'
+  ];
+  document.querySelectorAll('.metric-sub').forEach((el, i) => {
+    el.textContent = subs[Math.floor(Math.random() * subs.length)];
+  });
+  showToast('Metrics reshuffled. Still looking rough.', 'judgment');
+}
+
+// ===== EMOTIONAL WEATHER =====
+function refreshWeather() {
+  const w = WEATHER_STATES[Math.floor(Math.random() * WEATHER_STATES.length)];
+  const widget = document.getElementById('weatherWidget');
+  widget.style.animation = 'none';
+  widget.offsetHeight; // trigger reflow
+  widget.style.animation = 'pageIn .5s ease';
+  document.getElementById('weatherEmoji').textContent = w.emoji;
+  document.getElementById('weatherTemp').textContent = w.temp;
+  document.getElementById('weatherDesc').textContent = w.desc;
+  document.getElementById('weatherAnxiety').textContent = w.anxiety;
+  document.getElementById('weatherHope').textContent = w.hope;
+  document.getElementById('weatherDelusion').textContent = w.delusion;
+}
+
+// ===== CHAOS FEATURES =====
+function triggerChaos() {
+  const popup = CHAOS_POPUPS[Math.floor(Math.random() * CHAOS_POPUPS.length)];
+  document.getElementById('chaosEmoji').textContent = popup.emoji;
+  document.getElementById('chaosTitle').textContent = popup.title;
+  document.getElementById('chaosText').textContent = popup.text;
+  document.getElementById('chaosPopup').classList.add('show');
+  // Shake the app
+  document.getElementById('appContainer').classList.add('shake');
+  setTimeout(() => document.getElementById('appContainer').classList.remove('shake'), 500);
+}
+
+function closeChaos() {
+  document.getElementById('chaosPopup').classList.remove('show');
+}
+
+function touchGrassAlert() {
+  showToast('Go outside. Touch a leaf. You\'re in a situationship. 🌿', 'alert');
+  setTimeout(() => showToast('...you\'re still here, aren\'t you.', 'judgment'), 3000);
+}
+
+function celebrateBareMinimum() {
+  triggerConfetti();
+  showToast('They texted first?! CONFETTI TIME! 🎉', 'success');
+  setTimeout(() => showToast('...it was probably a fwd message but we celebrate anyway.', 'judgment'), 2500);
+}
+
+let chaosTimer = null;
+function startChaosTimer() {
+  chaosTimer = setInterval(() => {
+    if (Math.random() < 0.3) {
+      const msg = JUDGMENT_TOASTS[Math.floor(Math.random() * JUDGMENT_TOASTS.length)];
+      showToast(msg, 'judgment');
+    }
+  }, 35000);
+  // Change quote periodically
+  setInterval(() => {
+    const q = document.getElementById('chaosQuote');
+    if (q) {
+      q.style.opacity = '0';
+      setTimeout(() => {
+        q.textContent = CHAOS_QUOTES[Math.floor(Math.random() * CHAOS_QUOTES.length)];
+        q.style.opacity = '1';
+      }, 300);
+    }
+  }, 12000);
+}
+
+// ===== REPLY ANALYZER =====
+let seenToggled = false;
+document.getElementById('seenToggle').addEventListener('click', function() {
+  seenToggled = !seenToggled;
+  this.classList.toggle('on', seenToggled);
+  this.setAttribute('aria-checked', seenToggled);
+  document.getElementById('seenLabel').textContent = seenToggled ? 'Yes' : 'No';
+});
+
+function analyzeReply() {
+  const msg = document.getElementById('analyzeMsg').value.trim().toLowerCase();
+  const time = parseInt(document.getElementById('analyzeTime').value);
+  const emoji = parseInt(document.getElementById('analyzeEmoji').value);
+  const seen = seenToggled;
+  const weirdCount = parseInt(document.getElementById('analyzeWeird').value) || 0;
+
+  if (!msg) {
+    showToast('Type their message first. We can\'t judge nothing.', 'alert');
+    return;
+  }
+
+  // Calculate scores
+  let toxicity = 20;
+  let ghostProb = 10;
+  let delusion = 30;
+  let attachDanger = 2;
+
+  // Dry words check
+  const words = msg.split(/\s+/);
+  let dryCount = 0;
+  for (const w of words) {
+    if (DRY_WORDS.includes(w.replace(/[^a-z]/g, ''))) dryCount++;
+  }
+  toxicity += dryCount * 12;
+
+  // Red flag phrases
+  let flagCount = 0;
+  for (const phrase of RED_FLAG_PHRASES) {
+    if (msg.includes(phrase)) flagCount++;
+  }
+  toxicity += flagCount * 15;
+
+  // Message length
+  if (msg.length < 10) toxicity += 25;
+  else if (msg.length < 20) toxicity += 10;
+
+  // Reply time
+  ghostProb += time * 9;
+  if (time >= 8) ghostProb += 15;
+
+  // Seen but no meaningful reply
+  if (seen) {
+    ghostProb += 20;
+    toxicity += 15;
+    attachDanger += 3;
+  }
+
+  // Emoji
+  if (emoji === 0) toxicity += 10;
+  else if (emoji >= 3) toxicity -= 8;
+
+  // We'll see count
+  delusion += weirdCount * 8;
+  if (weirdCount >= 3) attachDanger += 2;
+
+  // Delusion inversely related to toxicity
+  if (toxicity > 60) delusion += 25;
+  if (ghostProb > 50) delusion += 15;
+  if (seen) delusion += 10;
+
+  // Attachment danger
+  attachDanger += Math.floor(time / 2);
+
+  // Cap values
+  toxicity = Math.min(100, Math.max(0, toxicity));
+  ghostProb = Math.min(100, Math.max(0, ghostProb));
+  delusion = Math.min(100, Math.max(0, delusion));
+  attachDanger = Math.min(10, Math.max(0, attachDanger));
+
+  // Emotional risk level
+  let riskLevel, riskColor;
+  if (toxicity + ghostProb > 130) { riskLevel = 'CRITICAL'; riskColor = 'var(--red)'; }
+  else if (toxicity + ghostProb > 80) { riskLevel = 'HIGH'; riskColor = 'var(--pink)'; }
+  else if (toxicity + ghostProb > 40) { riskLevel = 'MEDIUM'; riskColor = 'var(--yellow)'; }
+  else { riskLevel = 'LOW'; riskColor = 'var(--green)'; }
+
+  // Future prediction
+  let prediction = generatePrediction(toxicity, ghostProb, delusion, seen, dryCount, weirdCount);
+
+  // Render results
+  const container = document.getElementById('resultsContent');
+  container.innerHTML = `
+    <div class="result-row">
+      <span class="result-label">Toxicity Score</span>
+      <div class="result-bar"><div class="result-bar-fill" style="width:0;background:linear-gradient(90deg,var(--yellow),var(--red))" data-rw="${toxicity}"></div></div>
+      <span class="result-value" style="color:${toxicity > 60 ? 'var(--red)' : 'var(--yellow)'}">${toxicity}/100</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Ghosting Probability</span>
+      <div class="result-bar"><div class="result-bar-fill" style="width:0;background:linear-gradient(90deg,var(--purple),var(--red))" data-rw="${ghostProb}"></div></div>
+      <span class="result-value" style="color:${ghostProb > 60 ? 'var(--red)' : 'var(--purple-light)'}">${ghostProb}%</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Emotional Risk</span>
+      <span class="result-value" style="color:${riskColor}">${riskLevel}</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Delusion Percentage</span>
+      <div class="result-bar"><div class="result-bar-fill" style="width:0;background:linear-gradient(90deg,var(--purple-light),var(--pink))" data-rw="${delusion}"></div></div>
+      <span class="result-value" style="color:var(--pink-light)">${delusion}%</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Attachment Danger</span>
+      <span class="result-value" style="color:${attachDanger > 6 ? 'var(--red)' : 'var(--yellow)'}">${'🔴'.repeat(attachDanger)}${'⚪'.repeat(10 - attachDanger)}</span>
+    </div>
+  `;
+
+  document.getElementById('predictionBox').innerHTML = `<p>${prediction}</p>`;
+
+  const panel = document.getElementById('analyzeResults');
+  panel.classList.remove('show');
+  panel.offsetHeight;
+  panel.classList.add('show');
+
+  // Animate bars
+  setTimeout(() => {
+    container.querySelectorAll('.result-bar-fill').forEach(b => {
+      b.style.transition = 'width 1s ease';
+      b.style.width = b.dataset.rw + '%';
+    });
+  }, 100);
+
+  // Judgment toast
+  if (toxicity > 60) showToast('Bro got "' + msg.substring(0, 20) + (msg.length > 20 ? '...' : '') + '" and still stayed.', 'judgment');
+  else if (seen) showToast('Seen but not replied? The disrespect is loud.', 'judgment');
+}
+
+function generatePrediction(toxicity, ghostProb, delusion, seen, dryCount, weirdCount) {
+  const predictions = [];
+  if (ghostProb > 70) predictions.push('There is a 99% chance you will be ghosted by next Tuesday.');
+  if (toxicity > 70) predictions.push('This response has the emotional depth of a puddle in a desert.');
+  if (seen) predictions.push('Being left on seen is a personality, and theirs is terrible.');
+  if (delusion > 70) predictions.push('Your delusion is so powerful it could power a small city.');
+  if (dryCount >= 2) predictions.push('They used ' + dryCount + ' dry words. That\'s not a text, that\'s a cry for space.');
+  if (weirdCount >= 3) predictions.push('"We\'ll see" ' + weirdCount + ' times this week? That\'s not a plan, that\'s a lifestyle.');
+  if (toxicity < 30 && ghostProb < 30) predictions.push('Surprisingly okay response. They might actually be human. Don\'t get used to it.');
+
+  if (predictions.length === 0) predictions.push('This situationship is evolving in mysterious ways. Neither good nor bad. Just... chaotic.');
+
+  predictions.push('Situationship OS predicts this interaction will lead to more overthinking, a 3am deep dive into their old tweets, and at least one "should I text them?" internal debate.');
+
+  return predictions.join(' ');
+}
+
+let lastAnalysis = '';
+function saveAnalysis() {
+  const msg = document.getElementById('analyzeMsg').value.trim();
+  if (!msg) return;
+  lastAnalysis = `Reply Analysis: "${msg.substring(0, 50)}${msg.length > 50 ? '...' : ''}" — Results were concerning.`;
+  const entries = Storage.get('log_entries', []);
+  entries.unshift({
+    id: Date.now(),
+    mood: '💀',
+    text: lastAnalysis,
+    date: new Date().toISOString()
+  });
+  Storage.set('log_entries', entries);
+  renderLog();
+  showToast('Saved to emotional log. For future reference. Or therapy.', 'success');
+}
+
+// ===== RED FLAG DETECTOR =====
+let isScanning = false;
+function scanRedFlags() {
+  if (isScanning) return;
+  isScanning = true;
+
+  const btnWrap = document.getElementById('scanBtnWrap');
+  const btn = document.getElementById('scanBtn');
+  btnWrap.classList.add('scanning');
+  btn.textContent = 'Scanning...';
+  btn.disabled = true;
+  document.getElementById('flagsList').innerHTML = '';
+  document.getElementById('flagCounter').style.display = 'none';
+  document.getElementById('stillLikeWrap').style.display = 'none';
+
+  // Pick random flags
+  const count = Math.floor(Math.random() * 5) + 4;
+  const shuffled = [...RED_FLAGS].sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, count);
+
+  setTimeout(() => {
+    btnWrap.classList.remove('scanning');
+    btn.textContent = 'Scan Again 🔍';
+    btn.disabled = false;
+    isScanning = false;
+
+    // Show flags one by one
+    const list = document.getElementById('flagsList');
+    selected.forEach((flag, i) => {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'flag-item';
+        const sevClass = flag.severity === 'high' ? 'severity-high' : flag.severity === 'med' ? 'severity-med' : 'severity-low';
+        const sevText = flag.severity === 'high' ? 'CRITICAL' : flag.severity === 'med' ? 'WARNING' : 'MILD';
+        el.innerHTML = `
+          <span class="flag-emoji">${flag.emoji}</span>
+          <span class="flag-text">${flag.text}</span>
+          <span class="flag-severity ${sevClass}">${sevText}</span>
+        `;
+        list.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+      }, i * 350);
+    });
+
+    // Show counter
+    setTimeout(() => {
+      const counter = document.getElementById('flagCounter');
+      counter.style.display = 'block';
+      counter.textContent = `${count} red flags detected. That's a lot of flags. 🚩`;
+      counter.style.animation = 'pageIn .4s ease';
+      document.getElementById('stillLikeWrap').style.display = 'block';
+      document.getElementById('stillLikeWrap').style.animation = 'pageIn .4s ease';
+      showToast(`${count} red flags and you're still here? Iconic.`, 'judgment');
+    }, count * 350 + 200);
+  }, 2500);
+}
+
+function stillLikeThem() {
+  const resp = STILL_LIKE_RESPONSES[Math.floor(Math.random() * STILL_LIKE_RESPONSES.length)];
+  showToast(resp, 'judgment');
+  // Shake
+  document.getElementById('appContainer').classList.add('shake');
+  setTimeout(() => document.getElementById('appContainer').classList.remove('shake'), 500);
+}
+
+// ===== TEXT SIMULATOR =====
+let chatHistory = [];
+let isTyping = false;
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || isTyping) return;
+  input.value = '';
+  addChatBubble(text, 'me');
+  chatHistory.push({ from: 'me', text });
+  simulateReply(text);
+}
+
+function sendQuick(text) {
+  if (isTyping) return;
+  addChatBubble(text, 'me');
+  chatHistory.push({ from: 'me', text });
+  simulateReply(text);
+}
+
+function addChatBubble(text, type) {
+  const container = document.getElementById('chatMessages');
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ' + type;
+  bubble.textContent = text;
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addSystemMessage(text) {
+  const container = document.getElementById('chatMessages');
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble system';
+  bubble.textContent = text;
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight;
+}
+
+function simulateReply(userMsg) {
+  isTyping = true;
+  const indicator = document.getElementById('typingIndicator');
+  indicator.classList.add('show');
+  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+
+  // Pick response based on context
+  let response = EMOTIONALLY_UNAVAILABLE_RESPONSES[Math.floor(Math.random() * EMOTIONALLY_UNAVAILABLE_RESPONSES.length)];
+  const lower = userMsg.toLowerCase();
+  if (lower.includes('miss') || lower.includes('love')) {
+    const special = ['my bad','i\'m just not ready rn','you\'re cool tho','lol','idk what to say','don\'t start'];
+    response = special[Math.floor(Math.random() * special.length)];
+  } else if (lower.includes('together') || lower.includes('relationship') || lower.includes('label')) {
+    const special = ['i\'m not ready for a label','let\'s not ruin it','i like how things are','why do you need a label','we\'re good as is'];
+    response = special[Math.floor(Math.random() * special.length)];
+  } else if (lower.includes('ignore') || lower.includes('why') || lower.includes('mad')) {
+    const special = ['i wasn\'t ignoring u','i was busy','u\'re overthinking','chill','why u always doing this'];
+    response = special[Math.floor(Math.random() * special.length)];
+  } else if (lower.includes('morning') || lower.includes('night') || lower.includes('good')) {
+    const special = ['morning','gn','yoo','hey','mornin','lol gm'];
+    response = special[Math.floor(Math.random() * special.length)];
+  }
+
+  const delay = Math.random() * 2000 + 1500;
+  setTimeout(() => {
+    indicator.classList.remove('show');
+    addChatBubble(response, 'them');
+    chatHistory.push({ from: 'them', text: response });
+    isTyping = false;
+
+    // Occasional system commentary
+    if (Math.random() < 0.25) {
+      setTimeout(() => {
+        const comments = [
+          'Situationship OS: That response had ZERO emotional nutrition.',
+          'Situationship OS: They typed that in 0.3 seconds. Priorities.',
+          'Situationship OS: You deserved better. Always.',
+          'Situationship OS: Detecting emotional unavailability at maximum capacity.',
+          'Situationship OS: Even our servers felt that dryness.',
+          'Situationship OS: A whole paragraph met a "hmm." Tragic.',
+          'Situationship OS: They replied! ...with the bare minimum. Classic.'
+        ];
+        addSystemMessage(comments[Math.floor(Math.random() * comments.length)]);
+      }, 800);
+    }
+  }, delay);
+}
+
+// Enter key for chat
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// ===== SITUATIONSHIP LOG =====
+let selectedMood = '';
+
+function initMoodSelector() {
+  document.querySelectorAll('.mood-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+      selectedMood = this.dataset.mood;
+    });
+  });
+}
+
+function addLogEntry() {
+  const text = document.getElementById('logText').value.trim();
+  if (!selectedMood) {
+    showToast('Pick a mood first. How are we feeling?', 'alert');
+    return;
+  }
+  if (!text) {
+    showToast('Write something. Even "I\'m sad" counts.', 'alert');
+    return;
+  }
+
+  const entries = Storage.get('log_entries', []);
+  entries.unshift({
+    id: Date.now(),
+    mood: selectedMood,
+    text: text,
+    date: new Date().toISOString()
+  });
+  Storage.set('log_entries', entries);
+
+  document.getElementById('logText').value = '';
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  selectedMood = '';
+
+  renderLog();
+  showToast('Emotional damage logged successfully. 📉', 'success');
+
+  // Confetti for certain moods
+  if (selectedMood === '💖' || selectedMood === '😌') {
+    // too late, selectedMood was cleared. Check text instead
+  }
+}
+
+function deleteLogEntry(id) {
+  let entries = Storage.get('log_entries', []);
+  entries = entries.filter(e => e.id !== id);
+  Storage.set('log_entries', entries);
+  renderLog();
+  showToast('Entry deleted. But the emotional damage remains.', 'judgment');
+}
+
+function renderLog() {
+  const entries = Storage.get('log_entries', []);
+  const container = document.getElementById('logEntries');
+  const empty = document.getElementById('emptyLog');
+
+  if (entries.length === 0) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.innerHTML = entries.map(entry => {
+    const d = new Date(entry.date);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="log-entry">
+        <button class="log-delete" onclick="deleteLogEntry(${entry.id})" aria-label="Delete entry">✕</button>
+        <div class="log-entry-header">
+          <span class="log-mood">${entry.mood}</span>
+          <span class="log-date">${dateStr} at ${timeStr}</span>
+        </div>
+        <div class="log-text">${escapeHtml(entry.text)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ===== TOAST SYSTEM =====
+function showToast(message, type) {
+  type = type || 'judgment';
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ===== CONFETTI SYSTEM =====
+function triggerConfetti() {
+  const colors = ['#8b5cf6', '#ec4899', '#f472b6', '#a78bfa', '#fbbf24', '#34d399', '#ef4444', '#faf5ff'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (Math.random() * 8 + 4) + 'px';
+    piece.style.height = (Math.random() * 8 + 4) + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.animationDelay = (Math.random() * 1.5) + 's';
+    piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 5000);
+  }
+}
+
+// ===== CHAOS QUOTE TRANSITION =====
+document.getElementById('chaosQuote').style.transition = 'opacity .3s ease';
+
+// ===== INITIALIZE =====
+function init() {
+  initBg();
+  animateBg();
+  runStartup();
+  initNav();
+  initMoodSelector();
+  renderLog();
+  refreshWeather();
+}
+
+// Wait for fonts to load then start
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(init);
+} else {
+  window.addEventListener('DOMContentLoaded', init);
+}
+</script>
+</body>
+</html>
